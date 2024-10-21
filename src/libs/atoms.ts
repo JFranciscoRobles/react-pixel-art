@@ -1,7 +1,6 @@
 import { atom } from "jotai";
-import { atomWithReducer } from "jotai/utils";
+import { atomWithStorage } from "jotai/utils";
 
-// Nuevo tipo para representar una capa
 export type Layer = {
   id: number;
   name: string;
@@ -10,7 +9,6 @@ export type Layer = {
   opacity: number;
 };
 
-// Estado inicial actualizado
 export const initialState = {
   gridSize: 8,
   cellSize: 64,
@@ -34,7 +32,6 @@ export const initialState = {
   startPos: null as { x: number; y: number } | null,
 };
 
-// Tipos de acciones actualizados
 export type Action =
   | { type: "SET_COLOR"; payload: string }
   | {
@@ -64,7 +61,6 @@ export type Action =
       endY: number;
     };
 
-// Funciones auxiliares
 const createEmptyGrid = (size: number) =>
   Array(size)
     .fill(null)
@@ -85,7 +81,6 @@ const resizeGrid = (
     );
 };
 
-// Reducer actualizado
 const gridReducer = (state: typeof initialState, action: Action) => {
   switch (action.type) {
     case "SET_COLOR":
@@ -382,7 +377,6 @@ const gridReducer = (state: typeof initialState, action: Action) => {
   }
 };
 
-// Funciones de dibujo
 const floodFill = (
   grid: (string | null)[][],
   x: number,
@@ -494,11 +488,17 @@ const drawLine = (
   }
   return newGrid;
 };
+export const storedGridAtom = atomWithStorage("gridState", initialState);
 
-// Atom con reducer actualizado
-export const gridAtom = atomWithReducer(initialState, gridReducer);
+export const gridAtom = atom(
+  (get) => get(storedGridAtom),
+  (get, set, action) => {
+    //@ts-ignore
+    const newState = gridReducer(get(storedGridAtom), action);
+    set(storedGridAtom, newState);
+  }
+);
 
-// Atom para dibujar actualizado
 export const drawGridAtom = atom((get) => {
   const { layers, gridSize, cellSize } = get(gridAtom);
 
@@ -524,10 +524,8 @@ export const drawGridAtom = atom((get) => {
       }
     });
 
-    // Restaurar la opacidad global para el preview
     ctx.globalAlpha = 1;
 
-    // Dibujar el preview de las herramientas por encima de todas las capas
     if (previewCells.length > 0) {
       ctx.globalAlpha = 0.5;
       ctx.fillStyle = previewColor;

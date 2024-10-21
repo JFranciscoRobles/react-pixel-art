@@ -11,6 +11,7 @@ This is a web application for creating pixel art. The intuitive interface allows
   - Draw, Erase, and Fill.
   - Basic shapes: Circle, Square, Line.
   - Adjustable brush size.
+  - Preview tool.
 
 - **Grid Settings:**
 

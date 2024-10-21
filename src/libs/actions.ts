@@ -19,20 +19,16 @@ const getCoordinates = (
   let clientY = 0;
 
   if ("touches" in event) {
-    // Es un evento táctil
     clientX = event.touches[0].clientX;
     clientY = event.touches[0].clientY;
   } else {
-    // Es un evento de mouse
     clientX = event.clientX;
     clientY = event.clientY;
   }
 
-  // Ajuste para la densidad de píxeles del dispositivo
   const scaleX = canvas.width / rect.width;
   const scaleY = canvas.height / rect.height;
 
-  // Ajuste las coordenadas teniendo en cuenta el escalado
   const x = Math.floor(((clientX - rect.left) * scaleX) / canvasState.cellSize);
   const y = Math.floor(((clientY - rect.top) * scaleY) / canvasState.cellSize);
 
