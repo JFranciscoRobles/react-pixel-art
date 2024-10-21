@@ -26,6 +26,11 @@ This is a web application for creating pixel art. The intuitive interface allows
 - **Controls:**
   - "Clear Canvas" button to reset the grid.
 
+- **State Persistence (localStorage):**
+
+  - The grid state and selected tools are saved in localStorage, allowing users to continue their work when reloading the page.
+  - The app uses jotai for state management and localStorage to persist key data, such as grid design, tools settings and layer settings.
+
 ## Technologies Used
 
 - **React**: JavaScript framework for building user interfaces.
