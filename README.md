@@ -29,8 +29,8 @@ This is a web application for creating pixel art. The intuitive interface allows
 
 - **Undo/Redo (Testing)**
   
-  -Limited to the last 5 states.
-  -Undo/Redo are not saved in localStorage due to storage constraints.
+  - Limited to the last 5 states.
+  - Undo/Redo are not saved in localStorage due to storage constraints.
 
 - **State Persistence (localStorage):**
 
