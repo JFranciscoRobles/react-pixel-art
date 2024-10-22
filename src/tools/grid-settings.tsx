@@ -1,4 +1,3 @@
-import React from "react";
 import { useAtom } from "jotai";
 import { gridAtom } from "../libs/atoms";
 import { Slider } from "../components/ui/slider";

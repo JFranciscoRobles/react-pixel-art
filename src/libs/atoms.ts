@@ -1,5 +1,6 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
+import { gridReducer } from "./gridReducer";
 
 export type Layer = {
   id: number;
@@ -9,7 +10,22 @@ export type Layer = {
   opacity: number;
 };
 
-export const initialState = {
+export interface AppState {
+  gridSize: number;
+  cellSize: number;
+  layers: Layer[];
+  activeLayerId: number;
+  color: string;
+  tool: "draw" | "erase" | "fill" | "circle" | "square" | "line";
+  isDrawing: boolean;
+  brushSize: number;
+  previewCells: { x: number; y: number }[];
+  startPos: { x: number; y: number } | null;
+}
+
+export const MAX_HISTORY_SIZE = 5;
+
+export const initialState: AppState = {
   gridSize: 8,
   cellSize: 64,
   layers: [
@@ -61,439 +77,69 @@ export type Action =
       endY: number;
     };
 
-const createEmptyGrid = (size: number) =>
-  Array(size)
-    .fill(null)
-    .map(() => Array(size).fill(null));
+export const undoRedoAtom = atom({
+  history: [] as AppState[],
+  future: [] as AppState[],
+});
 
-const resizeGrid = (
-  grid: (string | null)[][],
-  newSize: number
-): (string | null)[][] => {
-  return Array(newSize)
-    .fill(null)
-    .map((_, y) =>
-      Array(newSize)
-        .fill(null)
-        .map((_, x) =>
-          y < grid.length && x < grid[0].length ? grid[y][x] : null
-        )
-    );
-};
+export const undoRedoActionsAtom = atom(
+  (get) => get(undoRedoAtom),
+  (get, set, action: "UNDO" | "REDO" | "ADD_HISTORY", newState?: AppState) => {
+    const { history, future } = get(undoRedoAtom);
+    const currentState = get(storedGridAtom);
 
-const gridReducer = (state: typeof initialState, action: Action) => {
-  switch (action.type) {
-    case "SET_COLOR":
-      return { ...state, color: action.payload };
+    const updateHistory = (
+      newHistory: AppState[],
+      newFuture: AppState[] = []
+    ) => {
+      set(undoRedoAtom, { history: newHistory, future: newFuture });
+    };
 
-    case "SET_TOOL":
-      return { ...state, tool: action.payload };
+    switch (action) {
+      case "UNDO": {
+        if (history.length > 1) {
+          const previousState = history[history.length - 2];
+          const newHistory = history.slice(0, -1);
+          const newFuture = [currentState, ...future];
 
-    case "SET_CELL": {
-      const { x, y } = action;
-      const activeLayer = state.layers.find(
-        (layer) => layer.id === state.activeLayerId
-      );
-      if (!activeLayer) return state;
-
-      const newGrid = activeLayer.grid.map((row) => [...row]);
-
-      switch (state.tool) {
-        case "draw":
-          for (let i = 0; i < state.brushSize; i++) {
-            for (let j = 0; j < state.brushSize; j++) {
-              const nx = x + i;
-              const ny = y + j;
-              if (nx < state.gridSize && ny < state.gridSize) {
-                newGrid[ny][nx] = state.color;
-              }
-            }
-          }
-          break;
-
-        case "erase":
-          for (let i = 0; i < state.brushSize; i++) {
-            for (let j = 0; j < state.brushSize; j++) {
-              const nx = x + i;
-              const ny = y + j;
-              if (nx < state.gridSize && ny < state.gridSize) {
-                newGrid[ny][nx] = null;
-              }
-            }
-          }
-          break;
-
-        case "fill":
-          return {
-            ...state,
-            layers: state.layers.map((layer) =>
-              layer.id === state.activeLayerId
-                ? { ...layer, grid: floodFill(newGrid, x, y, state.color) }
-                : layer
-            ),
-          };
-
-        case "circle":
-          return {
-            ...state,
-            layers: state.layers.map((layer) =>
-              layer.id === state.activeLayerId
-                ? {
-                    ...layer,
-                    grid: drawCircle(
-                      newGrid,
-                      x,
-                      y,
-                      state.color,
-                      state.brushSize
-                    ),
-                  }
-                : layer
-            ),
-          };
-
-        case "square":
-          return {
-            ...state,
-            layers: state.layers.map((layer) =>
-              layer.id === state.activeLayerId
-                ? {
-                    ...layer,
-                    grid: drawSquare(
-                      newGrid,
-                      x,
-                      y,
-                      state.color,
-                      state.brushSize
-                    ),
-                  }
-                : layer
-            ),
-          };
-
-        case "line":
-          return {
-            ...state,
-            layers: state.layers.map((layer) =>
-              layer.id === state.activeLayerId
-                ? { ...layer, grid: drawLine(newGrid, x, y, state.color) }
-                : layer
-            ),
-          };
+          set(storedGridAtom, previousState);
+          updateHistory(newHistory, newFuture);
+        }
+        break;
       }
+      case "REDO": {
+        if (future.length > 0) {
+          const nextState = future[0];
+          const newFuture = future.slice(1);
+          const newHistory = [...history, currentState];
 
-      return {
-        ...state,
-        layers: state.layers.map((layer) =>
-          layer.id === state.activeLayerId ? { ...layer, grid: newGrid } : layer
-        ),
-      };
-    }
-
-    case "RESET_GRID":
-      return {
-        ...state,
-        layers: state.layers.map((layer) => ({
-          ...layer,
-          grid: createEmptyGrid(state.gridSize),
-        })),
-      };
-
-    case "SET_DRAWING":
-      return { ...state, isDrawing: action.payload };
-
-    case "SET_BRUSH_SIZE":
-      return {
-        ...state,
-        brushSize: Math.max(1, Math.min(action.payload, state.gridSize)),
-      };
-
-    case "SET_PREVIEW_CELLS":
-      return { ...state, previewCells: action.payload };
-
-    case "SET_START_POS":
-      return { ...state, startPos: action.payload };
-    case "SET_SHAPE": {
-      const { shape, startX, startY, endX, endY } = action;
-      const activeLayer = state.layers.find(
-        (layer) => layer.id === state.activeLayerId
-      );
-      if (!activeLayer) return state;
-
-      const newGrid = activeLayer.grid.map((row) => [...row]);
-
-      switch (shape) {
-        case "circle": {
-          const radius = Math.max(
-            Math.abs(endX - startX),
-            Math.abs(endY - startY)
-          );
-          for (let angle = 0; angle < 360; angle++) {
-            const radians = (angle * Math.PI) / 180;
-            const nx = Math.round(startX + radius * Math.cos(radians));
-            const ny = Math.round(startY + radius * Math.sin(radians));
-            if (
-              nx >= 0 &&
-              ny >= 0 &&
-              nx < state.gridSize &&
-              ny < state.gridSize
-            ) {
-              newGrid[ny][nx] = state.color;
-            }
-          }
-          break;
+          set(storedGridAtom, nextState);
+          updateHistory(newHistory, newFuture);
         }
-        case "square": {
-          const width = Math.abs(endX - startX);
-          const height = Math.abs(endY - startY);
-          for (let i = 0; i <= width; i++) {
-            for (let j = 0; j <= height; j++) {
-              const x = startX + i * Math.sign(endX - startX);
-              const y = startY + j * Math.sign(endY - startY);
-              if (
-                x >= 0 &&
-                y >= 0 &&
-                x < state.gridSize &&
-                y < state.gridSize
-              ) {
-                if (i === 0 || i === width || j === 0 || j === height) {
-                  newGrid[y][x] = state.color;
-                }
-              }
-            }
-          }
-          break;
-        }
-        case "line": {
-          let dx = Math.abs(endX - startX);
-          let sx = startX < endX ? 1 : -1;
-          let dy = -Math.abs(endY - startY);
-          let sy = startY < endY ? 1 : -1;
-          let err = dx + dy;
-          let x = startX;
-          let y = startY;
-          while (true) {
-            if (x >= 0 && y >= 0 && x < state.gridSize && y < state.gridSize) {
-              newGrid[y][x] = state.color;
-            }
-            if (x === endX && y === endY) break;
-            const e2 = 2 * err;
-            if (e2 >= dy) {
-              err += dy;
-              x += sx;
-            }
-            if (e2 <= dx) {
-              err += dx;
-              y += sy;
-            }
-          }
-          break;
-        }
+        break;
       }
+      case "ADD_HISTORY": {
+        if (newState && newState !== currentState) {
+          // Si el historial está vacío, agrega el estado inicial
+          const isFirstAction = history.length === 0;
 
-      return {
-        ...state,
-        layers: state.layers.map((layer) =>
-          layer.id === state.activeLayerId ? { ...layer, grid: newGrid } : layer
-        ),
-      };
-    }
+          const newHistory = isFirstAction
+            ? [currentState] // Guarda el estado inicial si es la primera acción
+            : [...history, currentState].slice(-MAX_HISTORY_SIZE); // Guarda el historial con límite
 
-    case "ADD_LAYER":
-      const newLayerId = Math.max(...state.layers.map((l) => l.id)) + 1;
-      return {
-        ...state,
-        layers: [
-          ...state.layers,
-          {
-            id: newLayerId,
-            name: `Layout ${newLayerId}`,
-            grid: createEmptyGrid(state.gridSize),
-            visible: true,
-            opacity: 1,
-          },
-        ],
-        activeLayerId: newLayerId,
-      };
-
-    case "REMOVE_LAYER":
-      if (state.layers.length === 1) return state; // No permitir eliminar la última capa
-      return {
-        ...state,
-        layers: state.layers.filter((layer) => layer.id !== action.layerId),
-        activeLayerId:
-          state.activeLayerId === action.layerId
-            ? state.layers[0].id
-            : state.activeLayerId,
-      };
-
-    case "SET_ACTIVE_LAYER":
-      return { ...state, activeLayerId: action.layerId };
-
-    case "TOGGLE_LAYER_VISIBILITY":
-      return {
-        ...state,
-        layers: state.layers.map((layer) =>
-          layer.id === action.layerId
-            ? { ...layer, visible: !layer.visible }
-            : layer
-        ),
-      };
-
-    case "RENAME_LAYER":
-      return {
-        ...state,
-        layers: state.layers.map((layer) =>
-          layer.id === action.layerId ? { ...layer, name: action.name } : layer
-        ),
-      };
-
-    case "SET_GRID_SIZE":
-      const newGridSize = Math.max(1, Math.min(action.size, 32)); // Limitar entre 1 y 32
-      return {
-        ...state,
-        gridSize: newGridSize,
-        layers: state.layers.map((layer) => ({
-          ...layer,
-          grid: resizeGrid(layer.grid, newGridSize),
-        })),
-        brushSize: Math.min(state.brushSize, newGridSize),
-      };
-
-    case "SET_CELL_SIZE":
-      return { ...state, cellSize: Math.max(1, Math.min(action.size, 128)) }; // Limitar entre 1 y 128
-
-    case "SET_LAYER_OPACITY":
-      return {
-        ...state,
-        layers: state.layers.map((layer) =>
-          layer.id === action.layerId
-            ? { ...layer, opacity: Math.max(0, Math.min(1, action.opacity)) }
-            : layer
-        ),
-      };
-    default:
-      return state;
-  }
-};
-
-const floodFill = (
-  grid: (string | null)[][],
-  x: number,
-  y: number,
-  color: string
-) => {
-  const targetColor = grid[y][x];
-  if (targetColor === color) return grid;
-
-  const stack = [[x, y]];
-  const newGrid = grid.map((row) => [...row]);
-  const gridSize = newGrid.length;
-
-  while (stack.length) {
-    const [cx, cy] = stack.pop()!;
-    if (
-      cx >= 0 &&
-      cy >= 0 &&
-      cx < gridSize &&
-      cy < gridSize &&
-      newGrid[cy][cx] === targetColor
-    ) {
-      newGrid[cy][cx] = color;
-      stack.push([cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1]);
-    }
-  }
-  return newGrid;
-};
-
-const drawCircle = (
-  grid: (string | null)[][],
-  cx: number,
-  cy: number,
-  color: string,
-  size: number
-) => {
-  const newGrid = grid.map((row) => [...row]);
-  const gridSize = newGrid.length;
-  const radius = size;
-
-  for (let y = -radius; y <= radius; y++) {
-    for (let x = -radius; x <= radius; x++) {
-      if (x * x + y * y <= radius * radius) {
-        const nx = cx + x;
-        const ny = cy + y;
-        if (nx >= 0 && ny >= 0 && nx < gridSize && ny < gridSize) {
-          newGrid[ny][nx] = color;
+          updateHistory(newHistory);
         }
+        break;
       }
     }
   }
-  return newGrid;
-};
+);
 
-const drawSquare = (
-  grid: (string | null)[][],
-  x: number,
-  y: number,
-  color: string,
-  size: number
-) => {
-  const newGrid = grid.map((row) => [...row]);
-  const gridSize = newGrid.length;
-
-  for (let i = 0; i < size; i++) {
-    for (let j = 0; j < size; j++) {
-      const nx = x + i;
-      const ny = y + j;
-
-      if (nx < gridSize && ny < gridSize) {
-        if (i === 0 || i === size - 1 || j === 0 || j === size - 1) {
-          newGrid[ny][nx] = color;
-        }
-      }
-    }
-  }
-  return newGrid;
-};
-
-const drawLine = (
-  grid: (string | null)[][],
-  x0: number,
-  y0: number,
-  color: string
-) => {
-  const newGrid = grid.map((row) => [...row]);
-  const gridSize = newGrid.length;
-  const x1 = gridSize - 1;
-  const y1 = y0;
-
-  let dx = Math.abs(x1 - x0);
-  let sx = x0 < x1 ? 1 : -1;
-  let dy = -Math.abs(y1 - y0);
-  let sy = y0 < y1 ? 1 : -1;
-  let err = dx + dy;
-
-  while (true) {
-    newGrid[y0][x0] = color;
-    if (x0 === x1 && y0 === y1) break;
-    const e2 = 2 * err;
-    if (e2 >= dy) {
-      err += dy;
-      x0 += sx;
-    }
-    if (e2 <= dx) {
-      err += dx;
-      y0 += sy;
-    }
-  }
-  return newGrid;
-};
 export const storedGridAtom = atomWithStorage("gridState", initialState);
 
 export const gridAtom = atom(
   (get) => get(storedGridAtom),
-  (get, set, action) => {
-    //@ts-ignore
+  (get, set, action: Action) => {
     const newState = gridReducer(get(storedGridAtom), action);
     set(storedGridAtom, newState);
   }
@@ -509,7 +155,6 @@ export const drawGridAtom = atom((get) => {
   ) => {
     ctx.clearRect(0, 0, gridSize * cellSize, gridSize * cellSize);
 
-    // Dibujar todas las capas visibles
     layers.forEach((layer) => {
       if (layer.visible) {
         ctx.globalAlpha = layer.opacity;

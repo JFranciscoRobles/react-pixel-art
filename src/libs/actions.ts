@@ -1,7 +1,6 @@
 import { Dispatch, RefObject } from "react";
-import { Action, initialState } from "./atoms";
+import { Action, AppState } from "./atoms";
 
-type CanvasState = typeof initialState;
 let animationFrameId: number | null = null;
 
 const getCoordinates = (
@@ -9,7 +8,7 @@ const getCoordinates = (
     | React.MouseEvent<HTMLCanvasElement>
     | React.TouchEvent<HTMLCanvasElement>,
   canvasRef: RefObject<HTMLCanvasElement>,
-  canvasState: CanvasState
+  canvasState: AppState
 ) => {
   const canvas = canvasRef.current;
   if (!canvas) return { x: -1, y: -1 };
@@ -43,10 +42,9 @@ export const startDrawing = (
     | React.MouseEvent<HTMLCanvasElement>
     | React.TouchEvent<HTMLCanvasElement>,
   dispatch: Dispatch<Action>,
-  canvasState: CanvasState,
+  canvasState: AppState,
   canvasRef: RefObject<HTMLCanvasElement>
 ) => {
-  event.preventDefault();
   dispatch({ type: "SET_DRAWING", payload: true });
   const { x, y } = getCoordinates(event, canvasRef, canvasState);
   dispatch({ type: "SET_START_POS", payload: { x, y } });
@@ -65,10 +63,9 @@ export const updatePreviewOnMouseMove = (
     | React.MouseEvent<HTMLCanvasElement>
     | React.TouchEvent<HTMLCanvasElement>,
   dispatch: Dispatch<Action>,
-  canvasState: CanvasState,
+  canvasState: AppState,
   canvasRef: RefObject<HTMLCanvasElement>
 ) => {
-  event.preventDefault();
   const { x, y } = getCoordinates(event, canvasRef, canvasState);
 
   const renderPreview = () => {
@@ -195,9 +192,11 @@ export const updatePreviewOnMouseMove = (
 
   animationFrameId = requestAnimationFrame(renderPreview);
 };
+
 export const finishDrawing = (
   dispatch: Dispatch<Action>,
-  canvasState: CanvasState
+  canvasState: AppState,
+  dispatchHistory: any
 ) => {
   if (
     canvasState.startPos &&
@@ -214,8 +213,12 @@ export const finishDrawing = (
       endY: canvasState.previewCells[canvasState.previewCells.length - 1]?.y,
     });
   }
+
+  // Finalizar el dibujo
   dispatch({ type: "SET_DRAWING", payload: false });
   dispatch({ type: "SET_START_POS", payload: null });
+
+  dispatchHistory("ADD_HISTORY", canvasState);
 };
 
 export const resetDrawingState = (dispatch: Dispatch<Action>) => {
