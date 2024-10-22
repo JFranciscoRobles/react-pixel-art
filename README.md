@@ -28,6 +28,7 @@ This is a web application for creating pixel art. The intuitive interface allows
   - "Clear Canvas" button to reset the grid.
 
 - **Undo/Redo (Testing)**
+  
   -Limited to the last 5 states.
   -Undo/Redo are not saved in localStorage due to storage constraints.
 
