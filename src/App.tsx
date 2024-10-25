@@ -1,109 +1,72 @@
-import { useEffect, useRef } from "react";
-import { drawGridAtom, gridAtom, undoRedoActionsAtom } from "./libs/atoms";
-import { useAtomValue, useSetAtom } from "jotai";
-import ColorPicker from "./tools/color-picker";
-import { ToolSelector } from "./tools/tool-selector";
-import BrushSizeSelector from "./tools/brush-size";
-import ResetGrid from "./tools/reset-grid";
-import {
-  finishDrawing,
-  resetDrawingState,
-  startDrawing,
-  updatePreviewOnMouseMove,
-} from "./libs/actions";
-import LayerManager from "./canva/layer-manager";
-import GridSettings from "./tools/grid-settings";
-import UndoRedo from "./tools/undo-redo";
+import { useRef } from "react";
+import { Toolbar } from "./components/tool-bar";
+import { ColorPicker } from "./components/color-picker";
+import { BrushSize } from "./components/brush-size";
+import { Layers } from "./components/layers";
+import { Settings } from "./components/settings";
+import { ExportButton } from "./components/export-button";
+import { Canvas } from "./components/canvas";
+import Zoom from "./components/zoom";
+import { UndoRedo } from "./components/undo-redo";
+import { Github } from "lucide-react";
 
-function App() {
-  const drawGrid = useAtomValue(drawGridAtom);
-  const canvaState = useAtomValue(gridAtom);
-  const dispatch = useSetAtom(gridAtom);
-  const dispatchHistory = useSetAtom(undoRedoActionsAtom);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (ctx) drawGrid(ctx, canvaState.previewCells, canvaState.color);
-  }, [drawGrid, canvaState.previewCells, canvaState.color]);
-
-  const handleStart = (
-    event:
-      | React.MouseEvent<HTMLCanvasElement>
-      | React.TouchEvent<HTMLCanvasElement>
-  ) => {
-    startDrawing(event, dispatch, canvaState, canvasRef);
-  };
-
-  const handleMove = (
-    event:
-      | React.MouseEvent<HTMLCanvasElement>
-      | React.TouchEvent<HTMLCanvasElement>
-  ) => {
-    updatePreviewOnMouseMove(event, dispatch, canvaState, canvasRef);
-  };
-
-  const handleEnd = () => {
-    finishDrawing(dispatch, canvaState, dispatchHistory);
-  };
-
-  const handleLeave = () => {
-    resetDrawingState(dispatch);
-  };
+export default function PixelArtCreator() {
+  const containerRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="max-w-screen-xl p-4 mx-auto">
-      <h1 className="text-3xl font-bold text-center sm:text-4xl">Pixel Art</h1>
+    <div className="flex flex-col h-screen p-2">
+      <header className="p-4 text-center border-b">
+        <h1 className="text-3xl font-bold">Pixel Art</h1>
+      </header>
 
-      <div className="flex flex-col gap-8 my-12 lg:flex-row">
-        <div className="flex flex-col w-full gap-6 p-4 rounded-xl bg-secondary lg:max-w-xs">
-          <ToolSelector />
+      <div className="flex flex-1">
+        <aside className="flex flex-col p-4 overflow-y-auto border-r w-fit">
+          <h2 className="mb-4 text-lg font-bold">Herramientas</h2>
+          <Toolbar />
+          <h3 className="mt-6 mb-2 font-semibold">Picel</h3>
           <ColorPicker />
-          <BrushSizeSelector />
-          <GridSettings />
-        </div>
+          <BrushSize />
+          <h3 className="mt-6 mb-2 font-semibold">Configuración</h3>
+          <Settings />
+          <div className="mt-6 mb-2">
+            <ExportButton />
+          </div>
+        </aside>
 
-        <div className="flex flex-col items-center justify-center w-full">
-          <div className="flex justify-end w-full max-w-3xl space-x-2">
+        <main className="flex flex-col w-full">
+          <div className="relative border-b">
+            <Canvas containerRef={containerRef} />
+          </div>
+
+          <div className="flex justify-between w-full p-4 border-t">
+            <Zoom containerRef={containerRef} />
             <UndoRedo />
           </div>
-          <div className="relative w-full overflow-hidden">
-            {/* Canvas */}
-            <canvas
-              ref={canvasRef}
-              width={canvaState.gridSize * canvaState.cellSize}
-              height={canvaState.gridSize * canvaState.cellSize}
-              style={{
-                backgroundImage: `linear-gradient(0deg, #ccc 1px, transparent 1px), 
-                        linear-gradient(90deg, #ccc 1px, transparent 1px)`,
-                backgroundSize: `${canvaState.cellSize}px ${canvaState.cellSize}px`,
-                backgroundPosition: "0 0",
-              }}
-              className="border-2 rounded-md"
-              onMouseDown={handleStart}
-              onMouseMove={handleMove}
-              onMouseUp={handleEnd}
-              onMouseLeave={handleLeave}
-              onTouchStart={handleStart}
-              onTouchMove={handleMove}
-              onTouchEnd={handleEnd}
-            />
-          </div>
-        </div>
+        </main>
 
-        <div className="flex flex-col w-full gap-6 p-4 rounded-xl bg-secondary lg:max-w-xs">
-          <LayerManager />
-        </div>
+        <aside className="p-4 border-l w-fit">
+          <h2 className="mb-4 text-lg font-bold">Capas</h2>
+          <Layers />
+        </aside>
       </div>
 
-      <div className="flex justify-center mt-6">
-        <ResetGrid />
-      </div>
+      <footer className="p-4 mt-8 text-center border-t rounded-xl bg-primary text-primary-foreground">
+        <a
+          href="https://github.com/tu-repositorio"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 "
+        >
+          <Github size={24} /> Repositorio en GitHub
+        </a>
+        <p className="p-6 mt-2 text-center">
+          Esta es una aplicación web para crear arte en píxeles. Su interfaz
+          intuitiva permite a los usuarios dibujar, borrar y rellenar celdas en
+          una cuadrícula con varios tamaños de pincel y capas. Es perfecta para
+          diseñadores, artistas y entusiastas del pixel art que buscan una forma
+          rápida y sencilla de dar vida a sus ideas.
+        </p>
+      </footer>
     </div>
   );
 }
-
-export default App;
