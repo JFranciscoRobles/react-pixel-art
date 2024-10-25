@@ -2,7 +2,7 @@
 
 ## Description
 
-This is a web application for creating pixel art. The intuitive interface allows users to draw, erase, and fill cells on a grid with various brush sizes and layers. It is perfect for designers, artists, and pixel art enthusiasts looking for a quick and easy way to bring their ideas to life.
+This is a web application for creating pixel art. The intuitive interface allows users to draw, erase, and fill cells on a grid with various brush sizes and layers. It is perfect for designers, artists, and pixel art enthusiasts.
 
 ## Features
 
@@ -27,12 +27,12 @@ This is a web application for creating pixel art. The intuitive interface allows
 
   - "Clear Canvas" button to reset the grid.
 
-- **Undo/Redo (Testing)**
-  
-  - Limited to the last 5 states.
+- **Undo/Redo (Roadmap)**
+
+  - Limited to the last 20 states.
   - Undo/Redo are not saved in localStorage due to storage constraints.
 
-- **State Persistence (localStorage):**
+- **State Persistence (localStorage - Roadmap):**
 
   - The grid state and selected tools are saved in localStorage, allowing users to continue their work when reloading the page.
   - The app uses jotai for state management and localStorage to persist key data, such as grid design, tools settings and layer settings.

@@ -52,7 +52,7 @@ export default function PixelArtCreator() {
 
       <footer className="p-4 mt-8 text-center border-t rounded-xl bg-primary text-primary-foreground">
         <a
-          href="https://github.com/tu-repositorio"
+          href="https://github.com/JFranciscoRobles/react-pixel-art"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-center gap-2 "
