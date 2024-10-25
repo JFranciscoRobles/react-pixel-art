@@ -19,11 +19,11 @@ export default function PixelArtCreator() {
         <h1 className="text-3xl font-bold">Pixel Art</h1>
       </header>
 
-      <div className="flex flex-1">
-        <aside className="flex flex-col p-4 overflow-y-auto border-r w-fit">
+      <div className="flex flex-col flex-1 lg:flex-row">
+        <aside className="flex flex-col p-4 overflow-y-auto border-r lg:w-1/4">
           <h2 className="mb-4 text-lg font-bold">Herramientas</h2>
           <Toolbar />
-          <h3 className="mt-6 mb-2 font-semibold">Picel</h3>
+          <h3 className="mt-6 mb-2 font-semibold">Pixel</h3>
           <ColorPicker />
           <BrushSize />
           <h3 className="mt-6 mb-2 font-semibold">Configuración</h3>
@@ -33,8 +33,8 @@ export default function PixelArtCreator() {
           </div>
         </aside>
 
-        <main className="flex flex-col w-full">
-          <div className="relative border-b">
+        <main className="flex flex-col flex-1">
+          <div className="relative flex-1 border-b">
             <Canvas containerRef={containerRef} />
           </div>
 
@@ -44,7 +44,7 @@ export default function PixelArtCreator() {
           </div>
         </main>
 
-        <aside className="p-4 border-l w-fit">
+        <aside className="flex-none p-4 border-l lg:w-1/4">
           <h2 className="mb-4 text-lg font-bold">Capas</h2>
           <Layers />
         </aside>
