@@ -6,8 +6,8 @@ import {
   PaintBucket,
   Square,
   Circle,
-  Minus,
   Move,
+  Slash,
 } from "lucide-react";
 import { toolAtom } from "../libs/atoms";
 
@@ -50,7 +50,7 @@ export function Toolbar() {
         onClick={() => dispatchTool({ type: "SET_TOOL", tool: "line" })}
         variant={toolState.tool === "line" ? "default" : "outline"}
       >
-        <Minus className="w-4 h-4" />
+        <Slash className="w-4 h-4" />
       </Button>
       <Button
         onClick={() => dispatchTool({ type: "SET_TOOL", tool: "pan" })}

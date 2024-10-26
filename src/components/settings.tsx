@@ -46,13 +46,20 @@ export function Settings() {
           id="gridSize"
           type="number"
           value={canvasState.gridSize}
-          onChange={(e) =>
-            dispatchCanvas({
-              type: "SET_GRID_SIZE",
-              size: Number(e.target.value),
-            })
-          }
+          onChange={(e) => {
+            const newSize = Number(e.target.value);
+            if (newSize >= 1 && newSize <= 64) {
+              // Nuevo rango de validación
+              dispatchCanvas({
+                type: "SET_GRID_SIZE",
+                size: newSize,
+              });
+            } else {
+              alert("El tamaño debe estar entre 1 y 64.");
+            }
+          }}
           min="1"
+          max="64"
         />
       </div>
     </div>

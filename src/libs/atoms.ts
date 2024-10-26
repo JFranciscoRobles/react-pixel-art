@@ -23,8 +23,8 @@ const initialHistoryState: HistoryState = {
 };
 
 const initialCanvasState: CanvasState = {
-  canvasWidth: 500,
-  canvasHeight: 500,
+  canvasWidth: 512,
+  canvasHeight: 512,
   gridSize: 16,
   zoom: 1,
   layers: [],

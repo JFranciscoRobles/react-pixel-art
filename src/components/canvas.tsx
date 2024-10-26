@@ -7,13 +7,16 @@ import {
   shapeStartAtom,
   toolAtom,
 } from "../libs/atoms";
+import { cn } from "../libs/utils";
 
 interface CanvasProps {
   containerRef: React.RefObject<HTMLDivElement>;
+  canvaRef: React.RefObject<HTMLDivElement>;
 }
 
-export function Canvas({ containerRef }: CanvasProps) {
+export function Canvas({ containerRef, canvaRef }: CanvasProps) {
   const [canvasState, dispatchCanvas] = useAtom(canvasAtom);
+
   const [toolState] = useAtom(toolAtom);
   const [isDrawing, setIsDrawing] = useAtom(isDrawingAtom);
   const [shapeStart, setShapeStart] = useAtom(shapeStartAtom);
@@ -394,17 +397,40 @@ export function Canvas({ containerRef }: CanvasProps) {
     setShapeStart,
   ]);
 
+  const cursorClass = (() => {
+    switch (toolState.tool) {
+      case "brush":
+        return "cursor-brush";
+      case "eraser":
+        return "cursor-eraser";
+      case "fill":
+        return "cursor-fill";
+      case "square":
+      case "circle":
+      case "line":
+        return "cursor-square"; // Todos usan crosshair
+      case "pan":
+        return "cursor-pan";
+      default:
+        return "cursor-default"; // Cursor por defecto si no se encuentra una herramienta
+    }
+  })();
+
   return (
     <div
       ref={containerRef}
-      className="overflow-hidden border bg-gradient"
+      className={cn(`p-4 overflow-auto border bg-gradient`, cursorClass)}
       style={{
         width: "100%",
         height: "calc(100vh - 8rem)",
       }}
     >
+      {/* Contenedor para el PAN (desplazamiento) */}
+
+      {/* Contenedor para el ZOOM */}
       <div
         className="bg-white/80 transform-gpu"
+        ref={canvaRef}
         style={{
           transform: `scale(${canvasState.zoom}) translate(${canvasState.pan.x}px, ${canvasState.pan.y}px)`,
           transformOrigin: "0 0",
@@ -435,6 +461,7 @@ export function Canvas({ containerRef }: CanvasProps) {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onTouchStart={(e) => {
+          e.preventDefault(); // Prevenir scroll accidental
           const rect = e.currentTarget.getBoundingClientRect();
           const touch = e.touches[0];
           const x = Math.floor(
@@ -446,6 +473,7 @@ export function Canvas({ containerRef }: CanvasProps) {
           handleMouseDown(x, y);
         }}
         onTouchMove={(e) => {
+          e.preventDefault(); // Prevenir desplazamiento
           const rect = e.currentTarget.getBoundingClientRect();
           const touch = e.touches[0];
           const x = Math.floor(
@@ -490,9 +518,7 @@ export function Canvas({ containerRef }: CanvasProps) {
                     row.map((pixelColor, x) => (
                       <div
                         key={`${x}-${y}`}
-                        style={{
-                          backgroundColor: pixelColor,
-                        }}
+                        style={{ backgroundColor: pixelColor }}
                         className="border-gray-400 border-[1.5px]"
                       />
                     ))

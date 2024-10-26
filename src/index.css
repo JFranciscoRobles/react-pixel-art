@@ -52,3 +52,24 @@
     font-family: 'Poppins', sans-serif;
   }
 }
+
+/* styles.css */
+.cursor-brush {
+  cursor: crosshair;
+}
+
+.cursor-eraser {
+  cursor: crosshair;
+}
+
+.cursor-fill {
+  cursor: crosshair;
+}
+
+.cursor-square, .cursor-circle, .cursor-line {
+  cursor: crosshair;
+}
+
+.cursor-pan {
+  cursor: grab;
+}

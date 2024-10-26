@@ -12,6 +12,7 @@ import { Github } from "lucide-react";
 
 export default function PixelArtCreator() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvaRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="flex flex-col h-screen p-2">
@@ -33,13 +34,16 @@ export default function PixelArtCreator() {
           </div>
         </aside>
 
-        <main className="flex flex-col flex-1">
-          <div className="relative flex-1 border-b">
-            <Canvas containerRef={containerRef} />
+        <main className="flex flex-col flex-1 overflow-hidden">
+          <div
+            className="relative flex-1 overflow-auto"
+            style={{ minWidth: 0, minHeight: 0 }}
+          >
+            <Canvas containerRef={containerRef} canvaRef={canvaRef} />
           </div>
 
           <div className="flex justify-between w-full p-4 border-t">
-            <Zoom containerRef={containerRef} />
+            <Zoom containerRef={containerRef} canvaRef={canvaRef} />
             <UndoRedo />
           </div>
         </main>

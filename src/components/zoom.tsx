@@ -7,9 +7,10 @@ import { Crosshair1Icon } from "@radix-ui/react-icons";
 
 type Props = {
   containerRef: React.RefObject<HTMLDivElement>;
+  canvaRef: React.RefObject<HTMLDivElement>;
 };
 
-function Zoom({ containerRef }: Props) {
+function Zoom({ containerRef, canvaRef }: Props) {
   const [canvasState, dispatchCanvas] = useAtom(canvasAtom);
 
   const handleZoom = (delta: number) => {
@@ -20,11 +21,9 @@ function Zoom({ containerRef }: Props) {
   };
 
   const handleCenterView = () => {
-    if (containerRef.current) {
+    if (containerRef.current && canvaRef.current) {
       const containerWidth = containerRef.current.clientWidth;
       const containerHeight = containerRef.current.clientHeight;
-      const canvasWidth = canvasState.canvasWidth * canvasState.zoom;
-      const canvasHeight = canvasState.canvasHeight * canvasState.zoom;
 
       const newZoom = Math.min(
         containerWidth / canvasState.canvasWidth,
@@ -33,11 +32,14 @@ function Zoom({ containerRef }: Props) {
       );
 
       dispatchCanvas({ type: "SET_ZOOM", zoom: newZoom });
-      dispatchCanvas({
-        type: "SET_PAN",
-        x: (containerWidth - canvasWidth) / 2,
-        y: (containerHeight - canvasHeight) / 2,
-      });
+
+      const canvasWidth = canvasState.canvasWidth * newZoom;
+      const canvasHeight = canvasState.canvasHeight * newZoom;
+
+      const x = (containerWidth - canvasWidth) / 2;
+      const y = (containerHeight - canvasHeight) / 2;
+
+      dispatchCanvas({ type: "SET_PAN", x, y });
     }
   };
 
